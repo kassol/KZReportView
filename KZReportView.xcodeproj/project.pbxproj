@@ -14,6 +14,7 @@
 		BDE0817A1B5742300027610F /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BDE081791B5742300027610F /* Images.xcassets */; };
 		BDE0817D1B5742300027610F /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = BDE0817B1B5742300027610F /* LaunchScreen.xib */; };
 		BDE081891B5742300027610F /* KZReportViewTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BDE081881B5742300027610F /* KZReportViewTests.m */; };
+		BDE081941B5743890027610F /* KZReportView.m in Sources */ = {isa = PBXBuildFile; fileRef = BDE081931B5743890027610F /* KZReportView.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +41,8 @@
 		BDE081821B5742300027610F /* KZReportViewTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KZReportViewTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BDE081871B5742300027610F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BDE081881B5742300027610F /* KZReportViewTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KZReportViewTests.m; sourceTree = "<group>"; };
+		BDE081921B5743890027610F /* KZReportView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KZReportView.h; sourceTree = "<group>"; };
+		BDE081931B5743890027610F /* KZReportView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KZReportView.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +86,8 @@
 			children = (
 				BDE081701B5742300027610F /* AppDelegate.h */,
 				BDE081711B5742300027610F /* AppDelegate.m */,
+				BDE081921B5743890027610F /* KZReportView.h */,
+				BDE081931B5743890027610F /* KZReportView.m */,
 				BDE081731B5742300027610F /* ViewController.h */,
 				BDE081741B5742300027610F /* ViewController.m */,
 				BDE081761B5742300027610F /* Main.storyboard */,
@@ -220,6 +225,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BDE081751B5742300027610F /* ViewController.m in Sources */,
+				BDE081941B5743890027610F /* KZReportView.m in Sources */,
 				BDE081721B5742300027610F /* AppDelegate.m in Sources */,
 				BDE0816F1B5742300027610F /* main.m in Sources */,
 			);
