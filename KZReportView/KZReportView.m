@@ -336,6 +336,7 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     _bottomRightScroll = [[UIScrollView alloc] init];
     _bottomRightScroll.backgroundColor = [UIColor clearColor];
     _bottomRightScroll.scrollEnabled = YES;
+    _bottomRightScroll.bounces = NO;
     _bottomRightScroll.delegate = self;
     
     _topLeftView = [[UIView alloc] init];
