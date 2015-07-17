@@ -82,12 +82,18 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
-    if (self) {
-        [self initSubViews];
-        [self loadSubViews];
-    }
     
     return self;
+}
+
+- (void)startShow {
+    [self initSubViews];
+    [self loadSubViews];
+}
+
+- (void)reload {
+    _bottomRightScroll.contentOffset = CGPointMake(0, 0);
+    [self loadSubViews];
 }
 
 - (void)loadSubViews {
@@ -194,7 +200,7 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
         CGFloat height = ((NSNumber *)_bodyRowHeightArray[i-1]).floatValue;
         
         for (NSInteger j = 1; j < _colCount; ++j) {
-            NSString *text = [[_datasource rowDataforKZReportView:self forIndex:i-1] objectAtIndex:j-1];
+            NSString *text = [[_datasource rowDataforKZReportView:self forIndex:i-1] objectAtIndex:j];
             
             CGFloat width = ((NSNumber *)_colWidthArray[j]).floatValue;
             
@@ -283,7 +289,7 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
             break;
         case KZReportViewPartTopRight:
             superView = _topRightView;
-            countShouldAdd = 1;
+            countShouldAdd = _colCount-1;
             break;
         case KZReportViewPartBottomLeft:
             superView = _bottomLeftView;
@@ -574,7 +580,7 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     
     _colWidthArray = array;
     
-    if (![_delegate autoFitBodyHeight]) {
+    if (!_autoFitBodyHeight) {
         _bodyRowHeightArray = [[NSMutableArray alloc] init];
         for (NSInteger i = 0; i < _rowCount; ++i) {
             [_bodyRowHeightArray addObject:[NSNumber numberWithFloat:_cellHeight]];

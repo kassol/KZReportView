@@ -120,6 +120,7 @@ typedef NS_ENUM(NSInteger, KZReportHeightSizeFitType) {
 @property (nonatomic, weak) id<KZReportViewDelegate> delegate;
 
 - (instancetype)initWithFrame:(CGRect)frame;
-
+- (void)startShow;
+- (void)reload;
 
 @end
