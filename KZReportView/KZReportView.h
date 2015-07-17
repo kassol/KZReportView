@@ -10,9 +10,9 @@
 
 #pragma mark - kMNReportDefault
 
-#define KZReportDefaultHeaderRowHeight 30.0
+#define KZReportDefaultHeaderRowHeight 50.0
 #define KZReportDefaultCellHeight 30.0
-#define KZReportDefaultLeftWidth 77.0
+#define KZReportDefaultLeftWidth 80.0
 #define KZReportDefaultCellWidth 76.0
 
 #define KZReportDefaultFontSize 13.0
@@ -29,10 +29,10 @@
 #define KZReportDefaultHorizonLineWidth 1.0
 #define KZReportDefaultVerticalLineWidth  1.0
 
-#define KZReportDefaultTopBorderLineWidth 1.0
-#define KZReportDefaultBottomBorderLineWidth 1.0
-#define KZReportDefaultLeftBorderLineWidth 1.0
-#define KZReportDefaultRightBorderLineWidth 1.0
+#define KZReportDefaultTopBorderLineWidth 2.0
+#define KZReportDefaultBottomBorderLineWidth 2.0
+#define KZReportDefaultLeftBorderLineWidth 2.0
+#define KZReportDefaultRightBorderLineWidth 2.0
 
 #define KZReportDefaultWidthSizeFitType KZReportWidthSizeFitTypeNone
 #define KZReportDefaultHeightSizeFitType KZReportHeightSizeFitTypeNone
@@ -64,11 +64,6 @@ typedef NS_ENUM(NSInteger, KZReportHeightSizeFitType) {
 @interface KZReportCell : NSObject
 
 @property (nonatomic, copy) NSString *text;
-@property (nonatomic, copy) NSString *textColor;
-@property (nonatomic, copy) NSString *backgroundColor;
-@property (nonatomic, assign) NSTextAlignment textAlignment;
-@property (nonatomic, assign) CGFloat fontSize;
-@property (nonatomic, assign) BOOL bold;
 
 @end
 

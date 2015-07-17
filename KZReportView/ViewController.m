@@ -33,14 +33,26 @@
 
 #pragma mark - KZReportViewDelegate
 
+- (UIColor *)borderLineColor {
+    return [UIColor colorWithRed:200/255.0 green:200/255.0 blue:200/255.0 alpha:1.0];
+}
+
+- (UIColor *)headerBackgroundColor {
+    return [UIColor colorWithRed:240/255.0 green:240/255.0 blue:240/255.0 alpha:1.0];
+}
+
+- (UIColor *)headerTextColor {
+    return [UIColor blackColor];
+}
+
 #pragma mark -KZReportViewDatasource;
 
 - (NSArray *)rowDataforKZReportView:(KZReportView *)view forIndex:(NSInteger)index {
     return @[
-             [[NSString alloc] initWithFormat:@"第0列第%li行", (long)index+1],
+             [[NSString alloc] initWithFormat:@"第0列第%li行tttttttttmmmmmmmmmmmmmmmmmmmmmmmmmmm", (long)index+1],
              [[NSString alloc] initWithFormat:@"第1列第%li行", (long)index+1],
              [[NSString alloc] initWithFormat:@"第2列第%li行", (long)index+1],
-             [[NSString alloc] initWithFormat:@"第3列第%li行", (long)index+1],
+             [[NSString alloc] initWithFormat:@"第3列第%li行ttttttttt", (long)index+1],
              [[NSString alloc] initWithFormat:@"第4列第%li行", (long)index+1],
              [[NSString alloc] initWithFormat:@"第5列第%li行", (long)index+1],
              [[NSString alloc] initWithFormat:@"第6列第%li行", (long)index+1],
@@ -53,7 +65,7 @@
 }
 
 - (NSArray *)headerDataforKZReportView:(KZReportView *)view {
-    return @[@"", @"第1列", @"第2列", @"第3列", @"第4列", @"第5列", @"第6列", @"第7列", @"第8列", @"第9列", @"第10列", @"第11列"];
+    return @[@"", @"第1列ttttttttt", @"第2列", @"第3列", @"第4列", @"第5列", @"第6列", @"第7列", @"第8列", @"第9列", @"第10列", @"第11列"];
 }
 
 - (NSInteger)bodyRowCountInReport {
