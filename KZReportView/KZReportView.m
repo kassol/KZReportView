@@ -327,11 +327,17 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
 - (void)initSubViews {
     _topRightScroll = [[UIScrollView alloc] init];
     _topRightScroll.backgroundColor = [UIColor clearColor];
-    _topRightScroll.scrollEnabled = NO;
+    _topRightScroll.scrollEnabled = YES;
+    _topRightScroll.bounces = NO;
+    _topRightScroll.showsHorizontalScrollIndicator = NO;
+    _topRightScroll.delegate = self;
     
     _bottomLeftScroll = [[UIScrollView alloc] init];
     _bottomLeftScroll.backgroundColor = [UIColor clearColor];
-    _bottomLeftScroll.scrollEnabled = NO;
+    _bottomLeftScroll.scrollEnabled = YES;
+    _bottomLeftScroll.bounces = NO;
+    _bottomLeftScroll.showsVerticalScrollIndicator = NO;
+    _bottomLeftScroll.delegate = self;
     
     _bottomRightScroll = [[UIScrollView alloc] init];
     _bottomRightScroll.backgroundColor = [UIColor clearColor];
@@ -595,9 +601,15 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-    if (scrollView == _bottomRightScroll) {
+    if ([scrollView isEqual:_bottomRightScroll]) {
         _topRightScroll.contentOffset = CGPointMake(_bottomRightScroll.contentOffset.x, 0);
         _bottomLeftScroll.contentOffset = CGPointMake(0, _bottomRightScroll.contentOffset.y);
+    } else if ([scrollView isEqual:_topRightScroll]) {
+        _bottomLeftScroll.contentOffset = CGPointMake(0, _bottomRightScroll.contentOffset.y);
+        _bottomRightScroll.contentOffset = CGPointMake(_topRightScroll.contentOffset.x, _bottomRightScroll.contentOffset.y);
+    } else if ([scrollView isEqual:_bottomLeftScroll]) {
+        _topRightScroll.contentOffset = CGPointMake(_bottomRightScroll.contentOffset.x, 0);
+        _bottomRightScroll.contentOffset = CGPointMake(_bottomRightScroll.contentOffset.x, _bottomLeftScroll.contentOffset.y);
     }
 }
 
