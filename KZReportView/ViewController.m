@@ -23,7 +23,7 @@
     [self.view addSubview:_report];
     _report.delegate = self;
     _report.datasource = self;
-    [_report startShow];
+    [_report load];
 }
 
 - (void)didReceiveMemoryWarning {

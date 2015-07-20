@@ -86,7 +86,7 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     return self;
 }
 
-- (void)startShow {
+- (void)load {
     [self initSubViews];
     [self loadSubViews];
 }
@@ -551,10 +551,10 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     }
     
     if (reportHeight < frameHeight) {
-        if ([_delegate autoFitHeaderHeight] && _heightSizeFitType == KZReportWidthSizeFitTypeAll) {
+        if (_autoFitHeaderHeight && _heightSizeFitType == KZReportHeightSizeFitTypeAll) {
             _heightSizeFitType = KZReportHeightSizeFitTypeWithoutFirst;
         }
-        if ([_delegate autoFitBodyHeight]) {
+        if (_autoFitBodyHeight) {
             _heightSizeFitType = KZReportHeightSizeFitTypeNone;
         }
         
