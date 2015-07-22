@@ -69,12 +69,6 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
 @property (nonatomic, assign) KZReportWidthSizeFitType widthSizeFitType;
 
 @property (nonatomic, assign) BOOL autoFitHeaderHeight;
-@property (nonatomic, assign) BOOL autoFitBodyHeight;
-
-@property (nonatomic, strong) NSMutableArray *bodyRowHeightArray;
-@property (nonatomic, strong) NSArray *colWidthArray;
-
-@property (nonatomic, strong) NSArray *yOffsetArray;
 
 @end
 
@@ -82,13 +76,26 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
+    if (self) {
+        [self initSubViews];
+    }
     
     return self;
 }
 
-- (void)load {
-    [self initSubViews];
-    [self loadSubViews];
+- (void)setDatasource:(id<KZReportViewDataSource>)datasource {
+    if (_datasource != datasource) {
+        _datasource = datasource;
+        [self setStyle];
+        [self setContent];
+    }
+}
+
+- (void)setDelegate:(id<KZReportViewDelegate>)delegate {
+    if (_delegate != delegate) {
+        _delegate = delegate;
+        [self setStyle];
+    }
 }
 
 - (void)reload {
@@ -96,20 +103,45 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     [self loadSubViews];
 }
 
-- (void)loadSubViews {
+- (void)setContent {
     _colCount = [[_datasource headerDataforKZReportView:self] count];
     _rowCount = [_datasource bodyRowCountInReport];
-    
-    [self setStyle];
     [self sizeToFit];
-    [self layoutAllSubViews];
-    [self loadReport];
+    CGFloat rightWidth = - _verticalLineWidth;
+    for (NSInteger i = 1; i < _colCount; ++i) {
+        rightWidth += _cellWidth+_verticalLineWidth;
+    }
+    
+    _topRightScroll.frame = CGRectMake(_leftBorderLineWidth+_verticalLineWidth+_leftWidth, _topBorderLineWidth, self.frame.size.width-(_leftBorderLineWidth+_leftWidth+_verticalLineWidth+ _rightBorderLineWidth), _headerHeight);
+    _topRightScroll.contentSize = CGSizeMake(rightWidth, 0);
+    
+    _bottomLeftScroll.frame = CGRectMake(_leftBorderLineWidth, _topBorderLineWidth+_horizonLineWidth+_headerHeight, _leftWidth, self.frame.size.height-(_topBorderLineWidth+_headerHeight+_horizonLineWidth+_bottomBorderLineWidth));
+    _bottomLeftScroll.contentSize = CGSizeMake(0, _bodyHeight);
+    
+    _bottomRightScroll.frame = CGRectMake(_leftBorderLineWidth+_verticalLineWidth+_leftWidth, _topBorderLineWidth+_horizonLineWidth+_headerHeight, self.frame.size.width-(_leftBorderLineWidth+_leftWidth+_verticalLineWidth+_rightBorderLineWidth), self.frame.size.height-(_topBorderLineWidth+_headerHeight+_horizonLineWidth+_bottomBorderLineWidth));
+    _bottomRightScroll.contentSize = CGSizeMake(rightWidth, _bodyHeight);
+    
+    _topLeftView.frame = CGRectMake(_leftBorderLineWidth, _topBorderLineWidth, _leftWidth, _headerHeight);
+    _bottomLeftView.frame = CGRectMake(0, 0, _leftWidth, _bodyHeight);
+    _topRightView.frame = CGRectMake(0, 0, rightWidth, _headerHeight);
+    _bottomRightView.frame = CGRectMake(0, 0, rightWidth, _bodyHeight);
+    
+    _topLeftView.backgroundColor = [UIColor whiteColor];
+    _topRightScroll.backgroundColor = [UIColor whiteColor];
+    _bottomLeftScroll.backgroundColor = [UIColor whiteColor];
+    _bottomRightScroll.backgroundColor = [UIColor whiteColor];
+    self.backgroundColor = _borderLineColor;
+}
+
+- (void)loadSubViews {
+    //[self layoutAllSubViews];
+    //[self loadReport];
 }
 
 - (void)loadReport {
     CGFloat rightWidth = - _verticalLineWidth;
     for (NSInteger i = 1; i < _colCount; ++i) {
-        rightWidth += ((NSNumber *)_colWidthArray[i]).floatValue + _verticalLineWidth;
+        rightWidth += _cellWidth+_verticalLineWidth;
     }
     
     _topRightScroll.frame = CGRectMake(_leftBorderLineWidth+_verticalLineWidth+_leftWidth, _topBorderLineWidth, self.frame.size.width-(_leftBorderLineWidth+_leftWidth+_verticalLineWidth+ _rightBorderLineWidth), _headerHeight);
@@ -155,13 +187,13 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     
     for (NSInteger i = 1; i < [headerRow count]; ++i) {
         NSString *text = [headerRow objectAtIndex:i];
-        CGRect labelFrame = CGRectMake(xOffset, 0, ((NSNumber*)_colWidthArray[i]).floatValue, _headerRowHeight);
+        CGRect labelFrame = CGRectMake(xOffset, 0, _cellWidth, _headerRowHeight);
         KZReportLabel *l = [self labelWithFrame:labelFrame text:text inPart:KZReportViewPartTopRight index:index];
         l.row = 0;
         l.col = i;
         
         ++index;
-        xOffset += ((NSNumber*)_colWidthArray[i]).floatValue+_verticalLineWidth;
+        xOffset += _cellWidth+_verticalLineWidth;
     }
 }
 
@@ -169,12 +201,10 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     CGFloat yOffset = 0;
     NSInteger index = 0;
     
-    NSMutableArray *tempYOffsetArray = [NSMutableArray array];
-    
     for (NSInteger i = 1; i < _rowCount+1; ++i) {
         NSString *text = [[_datasource rowDataforKZReportView:self forIndex:i-1] objectAtIndex:0];
         
-        CGFloat height = ((NSNumber *)_bodyRowHeightArray[i-1]).floatValue;
+        CGFloat height = _cellHeight;
         
         CGRect labelFrame = CGRectMake(0, yOffset, _leftWidth, height);
         
@@ -184,11 +214,8 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
         
         ++index;
         
-        [tempYOffsetArray addObject:[NSNumber numberWithFloat:yOffset]];
         yOffset += height+_horizonLineWidth;
     }
-    
-    _yOffsetArray = tempYOffsetArray;
 }
 
 - (void)loadBottomRight {
@@ -197,12 +224,12 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     
     for (NSInteger i = 1; i < _rowCount+1; ++i) {
         CGFloat xOffset = 0;
-        CGFloat height = ((NSNumber *)_bodyRowHeightArray[i-1]).floatValue;
+        CGFloat height = _cellHeight;
         
         for (NSInteger j = 1; j < _colCount; ++j) {
             NSString *text = [[_datasource rowDataforKZReportView:self forIndex:i-1] objectAtIndex:j];
             
-            CGFloat width = ((NSNumber *)_colWidthArray[j]).floatValue;
+            CGFloat width = _cellWidth;
             
             CGRect labelFrame = CGRectMake(xOffset, yOffset, width, height);
             
@@ -480,11 +507,6 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     } else {
         _autoFitHeaderHeight = YES;
     }
-    if ([_delegate respondsToSelector:@selector(autoFitBodyHeight)]) {
-        _autoFitBodyHeight = [_delegate autoFitBodyHeight];
-    } else {
-        _autoFitBodyHeight = YES;
-    }
 }
 
 - (void)sizeToFit {
@@ -506,24 +528,6 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     }
     
     _bodyHeight = _cellHeight*_rowCount+_horizonLineWidth*(_rowCount-1);
-    
-    if (_autoFitBodyHeight) {
-        _bodyRowHeightArray = [[NSMutableArray alloc] init];
-        
-        for (NSInteger i = 0; i < [_datasource bodyRowCountInReport]; ++i) {
-            CGFloat maxHeight = _cellHeight;
-            for (NSString *text in [_datasource rowDataforKZReportView:self forIndex:i]) {
-                NSDictionary *attribute = @{NSFontAttributeName:[UIFont systemFontOfSize:_bodyFontSize]};
-                CGSize textSize = [text boundingRectWithSize:CGSizeMake(_cellWidth, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:attribute context:nil].size;
-                NSInteger textRowCount = (NSInteger)(textSize.height/_bodyFontSize);
-                CGFloat currentHeight = textRowCount*(_bodyFontSize+3);
-                
-                maxHeight = MAX(currentHeight, maxHeight);
-            }
-            [_bodyRowHeightArray addObject:[NSNumber numberWithFloat:maxHeight]];
-            _bodyHeight += maxHeight-_cellHeight;
-        }
-    }
     
     CGFloat reportHeight = _topBorderLineWidth+_headerHeight+_horizonLineWidth+_bodyHeight+_bottomBorderLineWidth;
     
@@ -554,9 +558,6 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
         if (_autoFitHeaderHeight && _heightSizeFitType == KZReportHeightSizeFitTypeAll) {
             _heightSizeFitType = KZReportHeightSizeFitTypeWithoutFirst;
         }
-        if (_autoFitBodyHeight) {
-            _heightSizeFitType = KZReportHeightSizeFitTypeNone;
-        }
         
         switch (_heightSizeFitType) {
             case KZReportHeightSizeFitTypeNone:
@@ -574,23 +575,6 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
                 break;
             default:
                 break;
-        }
-    }
-    
-    NSMutableArray *array = [[NSMutableArray alloc] init];
-    
-    [array addObject:[NSNumber numberWithFloat:_leftWidth]];
-    for (NSInteger i = 1; i < _colCount; ++i) {
-        
-        [array addObject:[NSNumber numberWithFloat:_cellWidth]];
-    }
-    
-    _colWidthArray = array;
-    
-    if (!_autoFitBodyHeight) {
-        _bodyRowHeightArray = [[NSMutableArray alloc] init];
-        for (NSInteger i = 0; i < _rowCount; ++i) {
-            [_bodyRowHeightArray addObject:[NSNumber numberWithFloat:_cellHeight]];
         }
     }
     

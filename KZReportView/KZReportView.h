@@ -105,7 +105,6 @@ typedef NS_ENUM(NSInteger, KZReportHeightSizeFitType) {
 - (KZReportHeightSizeFitType)heightSizeFitType;
 - (KZReportWidthSizeFitType)widthSizeFitType;
 - (BOOL)autoFitHeaderHeight;
-- (BOOL)autoFitBodyHeight;
 
 @end
 
@@ -115,7 +114,6 @@ typedef NS_ENUM(NSInteger, KZReportHeightSizeFitType) {
 @property (nonatomic, weak) id<KZReportViewDelegate> delegate;
 
 - (instancetype)initWithFrame:(CGRect)frame;
-- (void)load;
 - (void)reload;
 
 @end

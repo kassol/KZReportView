@@ -23,7 +23,6 @@
     [self.view addSubview:_report];
     _report.delegate = self;
     _report.datasource = self;
-    [_report load];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -49,10 +48,10 @@
 
 - (NSArray *)rowDataforKZReportView:(KZReportView *)view forIndex:(NSInteger)index {
     return @[
-             [[NSString alloc] initWithFormat:@"第0列第%li行tttttttttmmmmmmmmmmmmmmmmmmmmmmmmmmm", (long)index+1],
+             [[NSString alloc] initWithFormat:@"第0列第%li行", (long)index+1],
              [[NSString alloc] initWithFormat:@"第1列第%li行", (long)index+1],
              [[NSString alloc] initWithFormat:@"第2列第%li行", (long)index+1],
-             [[NSString alloc] initWithFormat:@"第3列第%li行ttttttttt", (long)index+1],
+             [[NSString alloc] initWithFormat:@"第3列第%li行", (long)index+1],
              [[NSString alloc] initWithFormat:@"第4列第%li行", (long)index+1],
              [[NSString alloc] initWithFormat:@"第5列第%li行", (long)index+1],
              [[NSString alloc] initWithFormat:@"第6列第%li行", (long)index+1],
@@ -65,11 +64,11 @@
 }
 
 - (NSArray *)headerDataforKZReportView:(KZReportView *)view {
-    return @[@"", @"第1列ttttttttt", @"第2列", @"第3列", @"第4列", @"第5列", @"第6列", @"第7列", @"第8列", @"第9列", @"第10列", @"第11列"];
+    return @[@"", @"第1列", @"第2列", @"第3列", @"第4列", @"第5列", @"第6列", @"第7列", @"第8列", @"第9列", @"第10列", @"第11列"];
 }
 
 - (NSInteger)bodyRowCountInReport {
-    return 20;
+    return 1000;
 }
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
