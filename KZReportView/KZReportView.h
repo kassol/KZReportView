@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "KZReportCell.h"
 
 #pragma mark - kMNReportDefault
 
@@ -48,24 +49,6 @@ typedef NS_ENUM(NSInteger, KZReportHeightSizeFitType) {
     KZReportHeightSizeFitTypeAll,            //Divided into equal part
     KZReportHeightSizeFitTypeWithoutFirst           //Divided into equal part except first row
 };
-
-
-#pragma mark - KZReportLabel
-
-@interface KZReportLabel : UILabel
-
-@property (nonatomic, readonly) NSUInteger col;
-@property (nonatomic, readonly) NSUInteger row;
-
-@end
-
-#pragma mark - KZReportGrid
-
-@interface KZReportCell : NSObject
-
-@property (nonatomic, copy) NSString *text;
-
-@end
 
 @class KZReportView;
 
@@ -115,5 +98,4 @@ typedef NS_ENUM(NSInteger, KZReportHeightSizeFitType) {
 
 - (instancetype)initWithFrame:(CGRect)frame;
 - (void)reload;
-
 @end

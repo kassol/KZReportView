@@ -15,21 +15,8 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     KZReportViewPartBottomRight
 };
 
-@interface KZReportLabel ()
-@property (nonatomic, assign) NSUInteger col;
-@property (nonatomic, assign) NSUInteger row;
-
-@end
-
-@implementation KZReportLabel
-
-@end
-
 @interface KZReportView ()
 @property (nonatomic, strong) UIView *topLeftView;
-@property (nonatomic, strong) UIView *topRightView;
-@property (nonatomic, strong) UIView *bottomLeftView;
-@property (nonatomic, strong) UIView *bottomRightView;
 @property (nonatomic, strong) UIScrollView *topRightScroll;
 @property (nonatomic, strong) UIScrollView *bottomLeftScroll;
 @property (nonatomic, strong) UIScrollView *bottomRightScroll;
@@ -70,6 +57,8 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
 
 @property (nonatomic, assign) BOOL autoFitHeaderHeight;
 
+@property (nonatomic, strong) NSMutableDictionary *cellForReuse;
+
 @end
 
 @implementation KZReportView
@@ -78,9 +67,17 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     self = [super initWithFrame:frame];
     if (self) {
         [self initSubViews];
+        _cellForReuse = [[NSMutableDictionary alloc] init];
     }
     
     return self;
+}
+
+- (void)reload {
+    [_cellForReuse removeAllObjects];
+    [self setStyle];
+    [self setContent];
+    [self reloadViews];
 }
 
 - (void)setDatasource:(id<KZReportViewDataSource>)datasource {
@@ -96,11 +93,6 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
         _delegate = delegate;
         [self setStyle];
     }
-}
-
-- (void)reload {
-    _bottomRightScroll.contentOffset = CGPointMake(0, 0);
-    [self loadSubViews];
 }
 
 - (void)setContent {
@@ -122,234 +114,8 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     _bottomRightScroll.contentSize = CGSizeMake(rightWidth, _bodyHeight);
     
     _topLeftView.frame = CGRectMake(_leftBorderLineWidth, _topBorderLineWidth, _leftWidth, _headerHeight);
-    _bottomLeftView.frame = CGRectMake(0, 0, _leftWidth, _bodyHeight);
-    _topRightView.frame = CGRectMake(0, 0, rightWidth, _headerHeight);
-    _bottomRightView.frame = CGRectMake(0, 0, rightWidth, _bodyHeight);
-    
-    _topLeftView.backgroundColor = [UIColor whiteColor];
-    _topRightScroll.backgroundColor = [UIColor whiteColor];
-    _bottomLeftScroll.backgroundColor = [UIColor whiteColor];
-    _bottomRightScroll.backgroundColor = [UIColor whiteColor];
     self.backgroundColor = _borderLineColor;
 }
-
-- (void)loadSubViews {
-    //[self layoutAllSubViews];
-    //[self loadReport];
-}
-
-- (void)loadReport {
-    CGFloat rightWidth = - _verticalLineWidth;
-    for (NSInteger i = 1; i < _colCount; ++i) {
-        rightWidth += _cellWidth+_verticalLineWidth;
-    }
-    
-    _topRightScroll.frame = CGRectMake(_leftBorderLineWidth+_verticalLineWidth+_leftWidth, _topBorderLineWidth, self.frame.size.width-(_leftBorderLineWidth+_leftWidth+_verticalLineWidth+ _rightBorderLineWidth), _headerHeight);
-    _topRightScroll.contentSize = CGSizeMake(rightWidth, 0);
-    
-    _bottomLeftScroll.frame = CGRectMake(_leftBorderLineWidth, _topBorderLineWidth+_horizonLineWidth+_headerHeight, _leftWidth, self.frame.size.height-(_topBorderLineWidth+_headerHeight+_horizonLineWidth+_bottomBorderLineWidth));
-    _bottomLeftScroll.contentSize = CGSizeMake(0, _bodyHeight);
-    
-    _bottomRightScroll.frame = CGRectMake(_leftBorderLineWidth+_verticalLineWidth+_leftWidth, _topBorderLineWidth+_horizonLineWidth+_headerHeight, self.frame.size.width-(_leftBorderLineWidth+_leftWidth+_verticalLineWidth+_rightBorderLineWidth), self.frame.size.height-(_topBorderLineWidth+_headerHeight+_horizonLineWidth+_bottomBorderLineWidth));
-    _bottomRightScroll.contentSize = CGSizeMake(rightWidth, _bodyHeight);
-    
-    _topLeftView.frame = CGRectMake(_leftBorderLineWidth, _topBorderLineWidth, _leftWidth, _headerHeight);
-    _bottomLeftView.frame = CGRectMake(0, 0, _leftWidth, _bodyHeight);
-    _topRightView.frame = CGRectMake(0, 0, rightWidth, _headerHeight);
-    _bottomRightView.frame = CGRectMake(0, 0, rightWidth, _bodyHeight);
-    
-    [self loadTopLeft];
-    [self loadTopRight];
-    [self loadBottomLeft];
-    [self loadBottomRight];
-    [self setNeedsDisplay];
-
-    [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode beforeDate: [NSDate date]];
-    
-    self.backgroundColor = _borderLineColor;
-}
-
-- (void)loadTopLeft {
-    NSInteger index = 0;
-    
-    CGRect labelFrame = CGRectMake(0, 0, _leftWidth, _headerRowHeight);
-    KZReportLabel *l = [self labelWithFrame:labelFrame text:[[_datasource headerDataforKZReportView:self] objectAtIndex:0] inPart:KZReportViewPartTopLeft index:index];
-    l.row = 0;
-    l.col = 0;
-}
-
-- (void)loadTopRight {
-    NSInteger index = 0;
-    
-    CGFloat xOffset = 0;
-    
-    NSArray *headerRow = [_datasource headerDataforKZReportView:self];
-    
-    for (NSInteger i = 1; i < [headerRow count]; ++i) {
-        NSString *text = [headerRow objectAtIndex:i];
-        CGRect labelFrame = CGRectMake(xOffset, 0, _cellWidth, _headerRowHeight);
-        KZReportLabel *l = [self labelWithFrame:labelFrame text:text inPart:KZReportViewPartTopRight index:index];
-        l.row = 0;
-        l.col = i;
-        
-        ++index;
-        xOffset += _cellWidth+_verticalLineWidth;
-    }
-}
-
-- (void)loadBottomLeft {
-    CGFloat yOffset = 0;
-    NSInteger index = 0;
-    
-    for (NSInteger i = 1; i < _rowCount+1; ++i) {
-        NSString *text = [[_datasource rowDataforKZReportView:self forIndex:i-1] objectAtIndex:0];
-        
-        CGFloat height = _cellHeight;
-        
-        CGRect labelFrame = CGRectMake(0, yOffset, _leftWidth, height);
-        
-        KZReportLabel *l = [self labelWithFrame:labelFrame text:text inPart:KZReportViewPartBottomLeft index:index];
-        l.row = i;
-        l.col = 0;
-        
-        ++index;
-        
-        yOffset += height+_horizonLineWidth;
-    }
-}
-
-- (void)loadBottomRight {
-    CGFloat yOffset = 0;
-    NSInteger index = 0;
-    
-    for (NSInteger i = 1; i < _rowCount+1; ++i) {
-        CGFloat xOffset = 0;
-        CGFloat height = _cellHeight;
-        
-        for (NSInteger j = 1; j < _colCount; ++j) {
-            NSString *text = [[_datasource rowDataforKZReportView:self forIndex:i-1] objectAtIndex:j];
-            
-            CGFloat width = _cellWidth;
-            
-            CGRect labelFrame = CGRectMake(xOffset, yOffset, width, height);
-            
-            KZReportLabel *l = [self labelWithFrame:labelFrame text:text inPart:KZReportViewPartBottomRight index:index];
-            l.row = i;
-            l.col = j;
-            xOffset += width+_verticalLineWidth;
-            ++index;
-        }
-        yOffset += height+_horizonLineWidth;
-    }
-}
-
-- (KZReportLabel *)labelWithFrame:(CGRect)frame text:(NSString *)text inPart:(KZReportViewPart)part index:(NSInteger)index {
-    KZReportLabel *l;
-    
-    switch (part) {
-        case KZReportViewPartTopLeft:
-        case KZReportViewPartTopRight:
-        {
-            if (part == KZReportViewPartTopLeft) {
-                
-                l = _topLeftView.subviews[index];
-            }
-            else
-            {
-                l = _topRightView.subviews[index];
-            }
-            CGFloat fontSize = _headerFontSize;
-            UIFont *font = [UIFont systemFontOfSize:fontSize];
-            l.font = font;
-            l.textColor = _headerTextColor;
-            l.backgroundColor = _headerBackgroundColor;
-            l.textAlignment = _headerTextAlignment;
-            break;
-        }
-        case KZReportViewPartBottomLeft:
-        case KZReportViewPartBottomRight:
-        {
-            if (part == KZReportViewPartBottomLeft) {
-                
-                l = _bottomLeftView.subviews[index];
-            }
-            else
-            {
-                l = _bottomRightView.subviews[index];
-            }
-            CGFloat fontSize = _bodyFontSize;
-            UIFont *font = [UIFont systemFontOfSize:fontSize];
-            l.font = font;
-            l.textColor = _bodyTextColor;
-            l.backgroundColor = _bodyBackgroundColor;
-            l.textAlignment = _bodyTextAlignment;
-            break;
-        }
-        default:
-            break;
-    }
-    
-    l.frame = frame;
-    
-    l.text = text;
-    l.lineBreakMode = NSLineBreakByCharWrapping;
-    l.numberOfLines = 0;
-    
-    return l;
-}
-
-- (void)layoutAllSubViews{
-    [self layoutInPart:KZReportViewPartTopLeft];
-    [self layoutInPart:KZReportViewPartTopRight];
-    [self layoutInPart:KZReportViewPartBottomLeft];
-    [self layoutInPart:KZReportViewPartBottomRight];
-}
-
-- (void)layoutInPart:(KZReportViewPart)part {
-    UIView *superView;
-    NSInteger countShouldAdd = 0;
-    
-    switch (part) {
-        case KZReportViewPartTopLeft:
-            superView = _topLeftView;
-            countShouldAdd = 1;
-            break;
-        case KZReportViewPartTopRight:
-            superView = _topRightView;
-            countShouldAdd = _colCount-1;
-            break;
-        case KZReportViewPartBottomLeft:
-            superView = _bottomLeftView;
-            countShouldAdd = _rowCount;
-            break;
-        case KZReportViewPartBottomRight:
-            superView = _bottomRightView;
-            countShouldAdd = _rowCount * (_colCount - 1);
-            break;
-        default:
-            break;
-    }
-    NSInteger labelCountNeedAdd = countShouldAdd - superView.subviews.count;
-    
-    if (labelCountNeedAdd < 0) {
-        while (labelCountNeedAdd < 0) {
-            KZReportLabel *l = [superView.subviews lastObject];
-            [l removeFromSuperview];
-            l = nil;
-            ++labelCountNeedAdd;
-        }
-    }
-    else
-    {
-        while (labelCountNeedAdd > 0) {
-            
-            KZReportLabel *l = [[KZReportLabel alloc] init];
-            [superView addSubview:l];
-            --labelCountNeedAdd;
-        }
-    }
-}
-
 
 - (void)initSubViews {
     _topRightScroll = [[UIScrollView alloc] init];
@@ -375,18 +141,6 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     _topLeftView = [[UIView alloc] init];
     _topLeftView.backgroundColor = [UIColor clearColor];
     
-    _topRightView = [[UIView alloc] init];
-    _topRightView.backgroundColor = [UIColor clearColor];
-    
-    _bottomLeftView = [[UIView alloc] init];
-    _bottomLeftView.backgroundColor = [UIColor clearColor];
-    
-    _bottomRightView = [[UIView alloc] init];
-    _bottomRightView.backgroundColor = [UIColor clearColor];
-    
-    [_topRightScroll addSubview:_topRightView];
-    [_bottomLeftScroll addSubview:_bottomLeftView];
-    [_bottomRightScroll addSubview:_bottomRightView];
     
     [self addSubview:_topLeftView];
     [self addSubview:_topRightScroll];
@@ -580,11 +334,153 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     
 }
 
+- (void)refreshViewWhenScroll {
+    NSInteger currentLeftCol = (NSInteger)(_bottomRightScroll.contentOffset.x+1e-6)/(NSInteger)(_cellWidth+1e-6)-1;
+    NSInteger currentTopRow = (NSInteger)(_bottomRightScroll.contentOffset.y+1e-6)/(NSInteger)(_cellHeight+1e-6)-1;
+    NSInteger currentRightCol = (NSInteger)(_bottomRightScroll.contentOffset.x+_bottomRightScroll.frame.size.width+1e-6)/(NSInteger)(_cellWidth+1e-6)+1;
+    NSInteger currentBottomRow = (NSInteger)(_bottomRightScroll.contentOffset.y+_bottomRightScroll.frame.size.height+1e-6)/(NSInteger)(_cellHeight+1e-6)+1;
+    currentLeftCol = MAX(0, currentLeftCol);
+    currentTopRow = MAX(0, currentTopRow);
+    currentRightCol = MIN([[_datasource headerDataforKZReportView:self] count]-2, currentRightCol);
+    currentBottomRow = MIN([_datasource bodyRowCountInReport]-1, currentBottomRow);
+    for (NSInteger col = currentLeftCol; col <= currentRightCol; ++col) {
+        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:currentTopRow inSection:col+1]];
+        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:currentBottomRow inSection:col+1]];
+        if (currentTopRow != 0) {
+            [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:currentTopRow-1 inSection:col+1]];
+        }
+        if (currentBottomRow != [_datasource bodyRowCountInReport]-1) {
+            [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:currentBottomRow+1 inSection:col+1]];
+        }
+    }
+    for (NSInteger row = currentTopRow; row <= currentBottomRow; ++row) {
+        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:currentLeftCol+1]];
+        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:currentRightCol+1]];
+        if (currentLeftCol != 0) {
+            [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:currentLeftCol]];
+        }
+        if (currentRightCol != [[_datasource headerDataforKZReportView:self] count]-2) {
+            [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:currentRightCol+2]];
+        }
+    }
+    
+    [self addCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:currentLeftCol+1]];
+    [self addCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:currentRightCol+1]];
+    [self addCellWithIndexPath:[NSIndexPath indexPathForRow:currentTopRow inSection:0]];
+    [self addCellWithIndexPath:[NSIndexPath indexPathForRow:currentBottomRow inSection:0]];
+    if (currentLeftCol != 0) {
+        [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:currentLeftCol]];
+    }
+    if (currentRightCol != [[_datasource headerDataforKZReportView:self] count]-2) {
+        [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:currentRightCol+2]];
+    }
+    if (currentTopRow != 0) {
+        [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:currentTopRow-1 inSection:0]];
+    }
+    if (currentBottomRow != [_datasource bodyRowCountInReport]-1) {
+        [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:currentBottomRow+1 inSection:0]];
+    }
+}
+
+- (void)addCellWithIndexPath:(NSIndexPath *)indexPath {
+    KZReportCell *cell = [self dequeReusableCellWithIndexPath:indexPath];
+    if (cell.superview == nil) {
+        cell.lineBreakMode = NSLineBreakByWordWrapping;
+        cell.numberOfLines = 0;
+        if (indexPath.section == 0) {
+            if (indexPath.row == -1) {
+                //topleft
+                cell.frame = CGRectMake(0, 0, _leftWidth, _headerHeight);
+                cell.text = [[_datasource headerDataforKZReportView:self] objectAtIndex:0];
+                cell.backgroundColor = _headerBackgroundColor;
+                UIFont *font = [UIFont systemFontOfSize:_headerFontSize];
+                cell.font = font;
+                cell.textColor = _headerTextColor;
+                cell.textAlignment = _headerTextAlignment;
+                [_topLeftView addSubview:cell];
+            } else {
+                //bottomleft
+                cell.frame = CGRectMake(0, indexPath.row*(_cellHeight+_horizonLineWidth), _leftWidth, _cellHeight);
+                cell.text = [[_datasource rowDataforKZReportView:self forIndex:indexPath.row] objectAtIndex:0];
+                cell.backgroundColor = _bodyBackgroundColor;
+                UIFont *font = [UIFont systemFontOfSize:_bodyFontSize];
+                cell.font = font;
+                cell.textColor = _bodyTextColor;
+                cell.textAlignment = _bodyTextAlignment;
+                [_bottomLeftScroll addSubview:cell];
+            }
+        } else {
+            if (indexPath.row == -1) {
+                //topright
+                cell.frame = CGRectMake((indexPath.section-1)*(_cellWidth+_verticalLineWidth), 0, _cellWidth, _headerHeight);
+                cell.text = [[_datasource headerDataforKZReportView:self] objectAtIndex:indexPath.section];
+                cell.backgroundColor = _headerBackgroundColor;
+                UIFont *font = [UIFont systemFontOfSize:_headerFontSize];
+                cell.font = font;
+                cell.textColor = _headerTextColor;
+                cell.textAlignment = _headerTextAlignment;
+                [_topRightScroll addSubview:cell];
+            } else {
+                //bottomright
+                cell.frame = CGRectMake((indexPath.section-1)*(_cellWidth+_verticalLineWidth), indexPath.row*(_cellHeight+_horizonLineWidth), _cellWidth, _cellHeight);
+                cell.text = [[_datasource rowDataforKZReportView:self forIndex:indexPath.row] objectAtIndex:indexPath.section];
+                cell.backgroundColor = _bodyBackgroundColor;
+                UIFont *font = [UIFont systemFontOfSize:_bodyFontSize];
+                cell.font = font;
+                cell.textColor = _bodyTextColor;
+                cell.textAlignment = _bodyTextAlignment;
+                [_bottomRightScroll addSubview:cell];
+            }
+        }
+        [_cellForReuse setObject:cell forKey:indexPath];
+    }
+}
+
+- (void)removeCellWithIndexPath:(NSIndexPath *)indexPath {
+    KZReportCell *cell = [_cellForReuse objectForKey:indexPath];
+    CGRect intersectRect = CGRectIntersection(cell.frame, CGRectMake(_bottomRightScroll.contentOffset.x, _bottomRightScroll.contentOffset.y, _bottomRightScroll.frame.size.width, _bottomRightScroll.frame.size.height));
+    if (CGRectIsEmpty(intersectRect) || CGRectIsNull(intersectRect)) {
+        [cell removeFromSuperview];
+    }
+}
+
+- (KZReportCell *)dequeReusableCellWithIndexPath:(NSIndexPath *)indexPath {
+    KZReportCell *cell = [_cellForReuse objectForKey:indexPath];
+    if (cell == nil) {
+        cell = [[KZReportCell alloc] init];
+    }
+    return cell;
+}
+
+- (void)reloadViews {
+    NSInteger currentLeftCol = (NSInteger)(_bottomRightScroll.contentOffset.x+1e-6)/(NSInteger)(_cellWidth+1e-6)-1;
+    NSInteger currentTopRow = (NSInteger)(_bottomRightScroll.contentOffset.y+1e-6)/(NSInteger)(_cellHeight+1e-6)-1;
+    NSInteger currentRightCol = (NSInteger)(_bottomRightScroll.contentOffset.x+_bottomRightScroll.frame.size.width+1e-6)/(NSInteger)(_cellWidth+1e-6)+1;
+    NSInteger currentBottomRow = (NSInteger)(_bottomRightScroll.contentOffset.y+_bottomRightScroll.frame.size.height+1e-6)/(NSInteger)(_cellHeight+1e-6)+1;
+    currentLeftCol = MAX(0, currentLeftCol);
+    currentTopRow = MAX(0, currentTopRow);
+    currentRightCol = MIN([[_datasource headerDataforKZReportView:self] count]-2, currentRightCol);
+    currentBottomRow = MIN([_datasource bodyRowCountInReport]-1, currentBottomRow);
+    [self addCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:0]];
+    for (NSInteger row = currentTopRow; row <= currentBottomRow; ++row) {
+        for (NSInteger col = currentLeftCol; col <= currentRightCol; ++col) {
+            [self addCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:col+1]];
+        }
+    }
+    for (NSInteger row = currentTopRow; row <= currentBottomRow; ++row) {
+        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:0]];
+    }
+    for (NSInteger col = currentLeftCol; col <= currentRightCol; ++col) {
+        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:col+1]];
+    }
+}
+
 
 #pragma mark - scrollViewDelegate
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
+    [self refreshViewWhenScroll];
     if ([scrollView isEqual:_bottomRightScroll]) {
         _topRightScroll.contentOffset = CGPointMake(_bottomRightScroll.contentOffset.x, 0);
         _bottomLeftScroll.contentOffset = CGPointMake(0, _bottomRightScroll.contentOffset.y);
@@ -595,6 +491,10 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
         _topRightScroll.contentOffset = CGPointMake(_bottomRightScroll.contentOffset.x, 0);
         _bottomRightScroll.contentOffset = CGPointMake(_bottomRightScroll.contentOffset.x, _bottomLeftScroll.contentOffset.y);
     }
+}
+
+- (void)scrollViewDidEndDecelerating:(nonnull UIScrollView *)scrollView {
+    [self reloadViews];
 }
 
 @end
