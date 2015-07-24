@@ -9,5 +9,8 @@
 #import <UIKit/UIKit.h>
 
 @interface KZReportCell : UILabel
+@property (nonatomic, assign)BOOL isOccupied;
+
+- (instancetype)init;
 
 @end

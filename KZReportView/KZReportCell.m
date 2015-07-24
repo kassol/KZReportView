@@ -10,6 +10,12 @@
 
 @implementation KZReportCell
 
+- (instancetype)init {
+    self = [super init];
+    _isOccupied = NO;
+    return self;
+}
+
 /*
 // Only override drawRect: if you perform custom drawing.
 // An empty implementation adversely affects performance during animation.

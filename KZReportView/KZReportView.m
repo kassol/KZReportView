@@ -57,7 +57,9 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
 
 @property (nonatomic, assign) BOOL autoFitHeaderHeight;
 
-@property (nonatomic, strong) NSMutableDictionary *cellForReuse;
+@property (nonatomic, strong) NSMutableDictionary *visibleCells;
+@property (nonatomic, strong) NSMutableDictionary *visibleCellsBackup;
+@property (nonatomic, strong) NSMutableArray *cellPool;
 
 @end
 
@@ -67,14 +69,21 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     self = [super initWithFrame:frame];
     if (self) {
         [self initSubViews];
-        _cellForReuse = [[NSMutableDictionary alloc] init];
+        _visibleCells = [[NSMutableDictionary alloc] init];
+        _visibleCellsBackup = [[NSMutableDictionary alloc] init];
+        _cellPool = [[NSMutableArray alloc] init];
     }
     
     return self;
 }
 
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    [self reloadViews];
+}
+
 - (void)reload {
-    [_cellForReuse removeAllObjects];
+    [_visibleCells removeAllObjects];
     [self setStyle];
     [self setContent];
     [self reloadViews];
@@ -121,14 +130,12 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     _topRightScroll = [[UIScrollView alloc] init];
     _topRightScroll.backgroundColor = [UIColor clearColor];
     _topRightScroll.scrollEnabled = YES;
-    _topRightScroll.bounces = NO;
     _topRightScroll.showsHorizontalScrollIndicator = NO;
     _topRightScroll.delegate = self;
     
     _bottomLeftScroll = [[UIScrollView alloc] init];
     _bottomLeftScroll.backgroundColor = [UIColor clearColor];
     _bottomLeftScroll.scrollEnabled = YES;
-    _bottomLeftScroll.bounces = NO;
     _bottomLeftScroll.showsVerticalScrollIndicator = NO;
     _bottomLeftScroll.delegate = self;
     
@@ -334,54 +341,6 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     
 }
 
-- (void)refreshViewWhenScroll {
-    NSInteger currentLeftCol = (NSInteger)(_bottomRightScroll.contentOffset.x+1e-6)/(NSInteger)(_cellWidth+1e-6)-1;
-    NSInteger currentTopRow = (NSInteger)(_bottomRightScroll.contentOffset.y+1e-6)/(NSInteger)(_cellHeight+1e-6)-1;
-    NSInteger currentRightCol = (NSInteger)(_bottomRightScroll.contentOffset.x+_bottomRightScroll.frame.size.width+1e-6)/(NSInteger)(_cellWidth+1e-6)+1;
-    NSInteger currentBottomRow = (NSInteger)(_bottomRightScroll.contentOffset.y+_bottomRightScroll.frame.size.height+1e-6)/(NSInteger)(_cellHeight+1e-6)+1;
-    currentLeftCol = MAX(0, currentLeftCol);
-    currentTopRow = MAX(0, currentTopRow);
-    currentRightCol = MIN([[_datasource headerDataforKZReportView:self] count]-2, currentRightCol);
-    currentBottomRow = MIN([_datasource bodyRowCountInReport]-1, currentBottomRow);
-    for (NSInteger col = currentLeftCol; col <= currentRightCol; ++col) {
-        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:currentTopRow inSection:col+1]];
-        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:currentBottomRow inSection:col+1]];
-        if (currentTopRow != 0) {
-            [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:currentTopRow-1 inSection:col+1]];
-        }
-        if (currentBottomRow != [_datasource bodyRowCountInReport]-1) {
-            [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:currentBottomRow+1 inSection:col+1]];
-        }
-    }
-    for (NSInteger row = currentTopRow; row <= currentBottomRow; ++row) {
-        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:currentLeftCol+1]];
-        [self addCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:currentRightCol+1]];
-        if (currentLeftCol != 0) {
-            [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:currentLeftCol]];
-        }
-        if (currentRightCol != [[_datasource headerDataforKZReportView:self] count]-2) {
-            [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:row inSection:currentRightCol+2]];
-        }
-    }
-    
-    [self addCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:currentLeftCol+1]];
-    [self addCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:currentRightCol+1]];
-    [self addCellWithIndexPath:[NSIndexPath indexPathForRow:currentTopRow inSection:0]];
-    [self addCellWithIndexPath:[NSIndexPath indexPathForRow:currentBottomRow inSection:0]];
-    if (currentLeftCol != 0) {
-        [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:currentLeftCol]];
-    }
-    if (currentRightCol != [[_datasource headerDataforKZReportView:self] count]-2) {
-        [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:currentRightCol+2]];
-    }
-    if (currentTopRow != 0) {
-        [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:currentTopRow-1 inSection:0]];
-    }
-    if (currentBottomRow != [_datasource bodyRowCountInReport]-1) {
-        [self removeCellWithIndexPath:[NSIndexPath indexPathForRow:currentBottomRow+1 inSection:0]];
-    }
-}
-
 - (void)addCellWithIndexPath:(NSIndexPath *)indexPath {
     KZReportCell *cell = [self dequeReusableCellWithIndexPath:indexPath];
     if (cell.superview == nil) {
@@ -432,31 +391,43 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
                 [_bottomRightScroll addSubview:cell];
             }
         }
-        [_cellForReuse setObject:cell forKey:indexPath];
     }
+    [_visibleCellsBackup setObject:cell forKey:indexPath];
 }
 
-- (void)removeCellWithIndexPath:(NSIndexPath *)indexPath {
-    KZReportCell *cell = [_cellForReuse objectForKey:indexPath];
-    CGRect intersectRect = CGRectIntersection(cell.frame, CGRectMake(_bottomRightScroll.contentOffset.x, _bottomRightScroll.contentOffset.y, _bottomRightScroll.frame.size.width, _bottomRightScroll.frame.size.height));
-    if (CGRectIsEmpty(intersectRect) || CGRectIsNull(intersectRect)) {
-        [cell removeFromSuperview];
+- (void)CleanCellsBackup {
+    for (NSIndexPath *indexPath in _visibleCellsBackup.keyEnumerator) {
+        KZReportCell *cell = [_visibleCellsBackup objectForKey:indexPath];
+        if (!cell.isOccupied) {
+            [cell removeFromSuperview];
+            [_cellPool addObject:cell];
+        } else {
+            cell.isOccupied = NO;
+        }
     }
+    [_visibleCellsBackup removeAllObjects];
 }
 
-- (KZReportCell *)dequeReusableCellWithIndexPath:(NSIndexPath *)indexPath {
-    KZReportCell *cell = [_cellForReuse objectForKey:indexPath];
-    if (cell == nil) {
-        cell = [[KZReportCell alloc] init];
+- (KZReportCell *)dequeReusableCellWithIndexPath:(NSIndexPath*)indexPath{
+    KZReportCell *cell = [_visibleCells objectForKey:indexPath];
+    if (cell) {
+        cell.isOccupied = YES;
+    } else {
+        if ([_cellPool count] > 0) {
+            cell = [_cellPool objectAtIndex:0];
+            [_cellPool removeObjectAtIndex:0];
+        } else {
+            cell = [[KZReportCell alloc] init];
+        }
     }
     return cell;
 }
 
 - (void)reloadViews {
-    NSInteger currentLeftCol = (NSInteger)(_bottomRightScroll.contentOffset.x+1e-6)/(NSInteger)(_cellWidth+1e-6)-1;
-    NSInteger currentTopRow = (NSInteger)(_bottomRightScroll.contentOffset.y+1e-6)/(NSInteger)(_cellHeight+1e-6)-1;
-    NSInteger currentRightCol = (NSInteger)(_bottomRightScroll.contentOffset.x+_bottomRightScroll.frame.size.width+1e-6)/(NSInteger)(_cellWidth+1e-6)+1;
-    NSInteger currentBottomRow = (NSInteger)(_bottomRightScroll.contentOffset.y+_bottomRightScroll.frame.size.height+1e-6)/(NSInteger)(_cellHeight+1e-6)+1;
+    NSInteger currentLeftCol = (NSInteger)(_bottomRightScroll.contentOffset.x+1e-6)/(NSInteger)(_cellWidth+_verticalLineWidth+1e-6)-5;
+    NSInteger currentTopRow = (NSInteger)(_bottomRightScroll.contentOffset.y+1e-6)/(NSInteger)(_cellHeight+_horizonLineWidth+1e-6)-5;
+    NSInteger currentRightCol = (NSInteger)(_bottomRightScroll.contentOffset.x+_bottomRightScroll.frame.size.width+1e-6)/(NSInteger)(_cellWidth+_verticalLineWidth+1e-6)+5;
+    NSInteger currentBottomRow = (NSInteger)(_bottomRightScroll.contentOffset.y+_bottomRightScroll.frame.size.height+1e-6)/(NSInteger)(_cellHeight+_horizonLineWidth+1e-6)+5;
     currentLeftCol = MAX(0, currentLeftCol);
     currentTopRow = MAX(0, currentTopRow);
     currentRightCol = MIN([[_datasource headerDataforKZReportView:self] count]-2, currentRightCol);
@@ -473,6 +444,10 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
     for (NSInteger col = currentLeftCol; col <= currentRightCol; ++col) {
         [self addCellWithIndexPath:[NSIndexPath indexPathForRow:-1 inSection:col+1]];
     }
+    NSMutableDictionary *temp = _visibleCellsBackup;
+    _visibleCellsBackup = _visibleCells;
+    _visibleCells = temp;
+    [self CleanCellsBackup];
 }
 
 
@@ -480,7 +455,6 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-    [self refreshViewWhenScroll];
     if ([scrollView isEqual:_bottomRightScroll]) {
         _topRightScroll.contentOffset = CGPointMake(_bottomRightScroll.contentOffset.x, 0);
         _bottomLeftScroll.contentOffset = CGPointMake(0, _bottomRightScroll.contentOffset.y);
@@ -491,6 +465,7 @@ typedef NS_ENUM(NSInteger, KZReportViewPart) {
         _topRightScroll.contentOffset = CGPointMake(_bottomRightScroll.contentOffset.x, 0);
         _bottomRightScroll.contentOffset = CGPointMake(_bottomRightScroll.contentOffset.x, _bottomLeftScroll.contentOffset.y);
     }
+    [self reloadViews];
 }
 
 - (void)scrollViewDidEndDecelerating:(nonnull UIScrollView *)scrollView {

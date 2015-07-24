@@ -68,7 +68,7 @@
 }
 
 - (NSInteger)bodyRowCountInReport {
-    return 100;
+    return 1000;
 }
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
